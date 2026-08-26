@@ -18,22 +18,25 @@ class JiraClient {
   }
 
   buildJql() {
-    if (this.config.jql) return this.config.jql;
-    if (this.config.projectKey) {
-      return `project = "${this.config.projectKey}" AND ${DEFAULT_JQL}`;
-    }
-    return DEFAULT_JQL;
+    const base = this.config.jql || DEFAULT_JQL;
+    if (!this.config.projectKey) return base;
+
+    // ORDER BY can't appear inside the parens we wrap the condition in, so split it out.
+    const match = base.match(/^(.*?)(\bORDER\s+BY\b.*)$/is);
+    const condition = (match ? match[1] : base).trim();
+    const orderBy = match ? ` ${match[2].trim()}` : '';
+
+    return `project = "${this.config.projectKey}" AND (${condition})${orderBy}`;
   }
 
   /** Fetches bug tickets assigned to the authenticated user (or matching the configured JQL). */
   async fetchAssignedBugs({ maxResults = 20 } = {}) {
     const jql = this.buildJql();
-    const { data } = await this.http.get('/search', {
-      params: {
-        jql,
-        maxResults,
-        fields: 'summary,description,status,priority,labels,issuetype,assignee',
-      },
+    // Atlassian retired `GET /rest/api/3/search` in 2025; `POST /search/jql` is its replacement.
+    const { data } = await this.http.post('/search/jql', {
+      jql,
+      maxResults,
+      fields: ['summary', 'description', 'status', 'priority', 'labels', 'issuetype', 'assignee'],
     });
 
     return data.issues.map(mapIssue);

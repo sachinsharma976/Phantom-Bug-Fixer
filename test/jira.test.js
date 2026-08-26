@@ -20,8 +20,7 @@ describe('JiraClient', () => {
 
   test('fetchAssignedBugs maps issues into a flat shape', async () => {
     nock(BASE_URL)
-      .get('/rest/api/3/search')
-      .query(true)
+      .post('/rest/api/3/search/jql')
       .reply(200, {
         issues: [
           {
@@ -63,9 +62,21 @@ describe('JiraClient', () => {
     expect(client.buildJql()).toContain('project = "BUG"');
   });
 
-  test('buildJql prefers an explicit jql override', () => {
-    const client = makeClient({ jql: 'project = FOO' });
-    expect(client.buildJql()).toBe('project = FOO');
+  test('buildJql combines an explicit jql override with the project scope', () => {
+    const client = makeClient({ jql: 'status IN (Ready, Backlog)' });
+    expect(client.buildJql()).toBe('project = "BUG" AND (status IN (Ready, Backlog))');
+  });
+
+  test('buildJql uses the raw jql when no project key is configured', () => {
+    const client = makeClient({ projectKey: '', jql: 'status IN (Ready, Backlog)' });
+    expect(client.buildJql()).toBe('status IN (Ready, Backlog)');
+  });
+
+  test('buildJql moves ORDER BY outside the wrapped condition', () => {
+    const client = makeClient({ jql: 'status IN (Ready, Backlog) AND sprint = 664 ORDER BY created DESC' });
+    expect(client.buildJql()).toBe(
+      'project = "BUG" AND (status IN (Ready, Backlog) AND sprint = 664) ORDER BY created DESC'
+    );
   });
 
   test('addLabel PUTs an update with the label added', async () => {
