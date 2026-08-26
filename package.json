@@ -1,0 +1,56 @@
+{
+  "name": "phantom-bug-fixer",
+  "version": "0.1.0",
+  "description": "Autonomous bug-fixing agent that pulls JIRA tickets, reproduces them with generated tests, fixes them with Claude, and opens GitHub PRs.",
+  "license": "MIT",
+  "author": "",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "bin": {
+    "phantom-bug-fixer": "./bin/phantom-bug-fixer.js",
+    "pbf": "./bin/phantom-bug-fixer.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node bin/phantom-bug-fixer.js run",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src bin test",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [
+    "jira",
+    "github",
+    "claude",
+    "ai-agent",
+    "bug-fixing",
+    "automation",
+    "anthropic"
+  ],
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@octokit/rest": "^18.12.0",
+    "axios": "^1.7.9",
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.7",
+    "fs-extra": "^11.2.0",
+    "ora": "^5.4.1",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "jest": "^29.7.0",
+    "nock": "^13.5.6"
+  },
+  "packageManager": "pnpm@10.3.0+sha512.ee592eda8815a8a293c206bb0917c4bb0ff274c50def7cbc17be05ec641fc2d1b02490ce660061356bd0d126a4d7eb2ec8830e6959fb8a447571c631d5a2442d"
+}

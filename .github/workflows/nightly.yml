@@ -1,0 +1,64 @@
+name: phantom-bug-fixer nightly run
+
+on:
+  schedule:
+    # 03:00 UTC every night
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      max_issues:
+        description: 'Max JIRA issues to process'
+        required: false
+        default: '5'
+      dry_run:
+        description: 'Run without opening PRs'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  fix-bugs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout phantom-bug-fixer
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run phantom-bug-fixer
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL }}
+          JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+          JIRA_JQL: ${{ vars.JIRA_JQL }}
+          GITHUB_TOKEN: ${{ secrets.PBF_GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ vars.TARGET_REPO_OWNER }}
+          GITHUB_REPO: ${{ vars.TARGET_REPO_NAME }}
+          GITHUB_BASE_BRANCH: ${{ vars.TARGET_REPO_BASE_BRANCH }}
+          REPO_WORKSPACE_DIR: ${{ github.workspace }}/workspace/repo
+          MAX_FIX_ITERATIONS: ${{ vars.MAX_FIX_ITERATIONS }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          node bin/phantom-bug-fixer.js run --max "${{ github.event.inputs.max_issues || '5' }}"
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phantom-bug-fixer-log
+          path: |
+            *.log
+          if-no-files-found: ignore
